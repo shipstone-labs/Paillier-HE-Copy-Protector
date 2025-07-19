@@ -1,0 +1,60 @@
+[package]
+name = "paillier_poc_backend"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# ICP SDK - Core functionality
+# Docs: https://docs.rs/ic-cdk/latest/ic_cdk/
+ic-cdk = "0.12"
+ic-cdk-macros = "0.8"
+
+# Candid - Interface Definition Language
+# Docs: https://docs.rs/candid/latest/candid/
+candid = "0.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_bytes = "0.11"
+
+# Crypto dependencies (WASM-compatible)
+# Must use specific versions that work in ICP's deterministic environment
+num-bigint = { version = "0.4", features = ["serde"] }
+num-traits = "0.2"
+
+# Custom getrandom for deterministic environment
+# Docs: https://docs.rs/getrandom/latest/getrandom/#custom-implementations
+getrandom = { version = "0.2", features = ["custom"] }
+rand = { version = "0.8", default-features = false, features = ["std_rng"] }
+
+# For stable storage (Phase 4)
+# Docs: https://docs.rs/ic-stable-structures/latest/ic_stable_structures/
+ic-stable-structures = "0.6"
+
+# vetKeys integration
+# Note: These are placeholder versions - check latest releases
+# ic-vetkeys = "0.1.0"  # Not yet available as a crate
+bls12_381 = "0.8"
+k256 = "0.13"
+sha2 = "0.10"
+
+# Performance optimization
+lru = "0.12"  # For key caching
+futures = "0.3"  # For batch operations
+
+[dev-dependencies]
+# For testing
+candid_parser = "0.1"
+pocket-ic = "2.0"  # Local IC testing
+
+[profile.release]
+# Critical optimizations for ICP
+lto = true
+opt-level = 3
+codegen-units = 1
+strip = true  # Remove debug symbols
+
+# Specific WASM optimizations
+[profile.release.package."*"]
+opt-level = 3

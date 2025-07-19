@@ -1,0 +1,73 @@
+// Paillier POC Canister Interface
+// Version: 0.1.0
+// 
+// This canister implements a proof-of-concept homomorphic encryption system
+// using a simplified Paillier scheme. NOT suitable for production use.
+
+type InitResult = record {
+    success: bool;
+    message: text;
+    key_generation_ms: nat64;             // Wall clock time for key generation
+    instructions_used: nat64;              // IC instruction counter value
+    memory_used_kb: nat64;                 // Heap memory estimate in KB
+};
+
+type EncryptResult = record {
+    success: bool;
+    doc_id: text;                          // Document identifier
+    tokens_encrypted: nat;                 // Number successfully encrypted
+    time_ms: nat64;                        // Wall clock time
+    instructions_used: nat64;              // IC instruction counter
+    memory_used_kb: nat64;                 // Heap memory estimate
+    error: opt text;                       // Detailed error if failed
+};
+
+type CompareResult = record {
+    success: bool;
+    similarity_score: opt blob;            // Encrypted similarity score
+    time_ms: nat64;                        // Wall clock time for comparison
+    instructions_used: nat64;              // IC instruction counter
+    instruction_percentage: float32;       // Percentage of limit used (0-100)
+    error: opt text;                       // Detailed error if failed
+};
+
+type CanisterStats = record {
+    total_operations: nat64;               // All operations performed
+    total_instructions: nat64;             // Cumulative instruction count
+    documents_stored: nat;                 // Current document count
+    memory_used_mb: float64;               // Estimated memory usage in MB
+    encryption_operations: nat64;          // Successful encryptions
+    comparison_operations: nat64;          // Successful comparisons
+    failed_operations: nat64;              // Failed operations
+    owner: opt text;                       // Canister owner principal
+};
+
+service : {
+    // Initialize Paillier with 512-bit keys (POC only)
+    // Must be called before any other operations
+    "initialize_paillier": () -> (InitResult);
+    
+    // Encrypt a document with up to 50 tokens of 32 bytes each
+    // Replaces existing document if doc_id already exists
+    // doc_id must be alphanumeric with _ or - (max 64 chars)
+    "encrypt_document": (doc_id: text, tokens: vec blob) -> (EncryptResult);
+    
+    // Compare two encrypted documents homomorphically
+    // Returns encrypted similarity score
+    // Both documents must have the same number of tokens
+    "compare_documents": (doc_id1: text, doc_id2: text) -> (CompareResult);
+    
+    // Get canister statistics (query method)
+    "get_stats": () -> (CanisterStats) query;
+    
+    // List all document IDs and their token counts (query method)
+    "list_documents": () -> (vec record { text; nat }) query;
+    
+    // Health check endpoint (query method)
+    // Returns status string with basic info
+    "health_check": () -> (text) query;
+    
+    // Clear all documents (owner only)
+    // Only the principal that deployed the canister can call this
+    "clear_all_documents": () -> (text);
+}

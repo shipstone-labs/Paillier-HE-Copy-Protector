@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paillier FHE Document Comparison - ICP Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .warning-banner {
+            background: #ff6b6b;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(255,107,107,0.3);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .tab:hover {
+            color: #2a5298;
+        }
+        
+        .tab.active {
+            color: #2a5298;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #2a5298;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .card h2 {
+            color: #2a5298;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card h3 {
+            color: #444;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .command-box {
+            background: #f0f4f8;
+            border: 1px solid #d1d9e0;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            margin: 1rem 0;
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .copy-button:hover {
+            background: #1e3c72;
+        }
+        
+        .copy-button.copied {
+            background: #4CAF50;
+        }
+        
+        .output-box {
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+            color: #1b5e20;
+        }
+        
+        .error-box {
+            background: #ffebee;
+            border: 1px solid #ef9a9a;
+            color: #b71c1c;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            color: #0d47a1;
+        }
+        
+        .workflow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        
+        .workflow-step {
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .workflow-icon {
+            width: 80px;
+            height: 80px;
+            background: #2a5298;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .workflow-arrow {
+            font-size: 2rem;
+            color: #2a5298;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+        
+        .button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .button:hover {
+            background: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(42,82,152,0.3);
+        }
+        
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .status-indicator.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-indicator.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .status-indicator.pending {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        .metric-card {
+            background: #f5f7fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2a5298;
+        }
+        
+        .metric-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .workflow-diagram {
+                flex-direction: column;
+            }
+            
+            .workflow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .checklist li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e1e8ed;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+        
+        .check-icon {
+            color: #4CAF50;
+            font-size: 1.2rem;
+        }
+        
+        .x-icon {
+            color: #f44336;
+            font-size: 1.2rem;
+        }
+        
+        .code-inline {
+            background: #f0f4f8;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 Paillier FHE Document Comparison</h1>
+        <p>Homomorphic Encryption Proof of Concept on Internet Computer</p>
+    </div>
+    
+    <div class="container">
+        <div class="warning-banner">
+            ⚠️ PROOF OF CONCEPT - This implementation uses SimplePaillier which is NOT cryptographically secure. Do not use for production!
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('overview')">Overview</button>
+            <button class="tab" onclick="showTab('quickstart')">Quick Start</button>
+            <button class="tab" onclick="showTab('commands')">Commands</button>
+            <button class="tab" onclick="showTab('testing')">Testing</button>
+            <button class="tab" onclick="showTab('monitoring')">Monitoring</button>
+        </div>
+        
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                    How It Works
+                </h2>
+                
+                <div class="workflow-diagram">
+                    <div class="workflow-step">
+                        <div class="workflow-icon">📄</div>
+                        <h4>Document A</h4>
+                        <p>Private document encrypted by inventor</p>
+                    </div>
+                    
+                    <div class="workflow-arrow">→</div>
+                    
+                    <div class="workflow-step">
+                        <div class="workflow-icon">🔐</div>
+                        <h4>FHE Encryption</h4>
+                        <p>Using vetKeys-derived keys</p>
+                    </div>
+                    
+                    <div class="workflow-arrow">→</div>
+                    
+                    <div class="workflow-step">
+                        <div class="workflow-icon">⚡</div>
+                        <h4>Homomorphic Compare</h4>
+                        <p>Compare without decryption</p>
+                    </div>
+                    
+                    <div class="workflow-arrow">→</div>
+                    
+                    <div class="workflow-step">
+                        <div class="workflow-icon">📊</div>
+                        <h4>Encrypted Result</h4>
+                        <p>Similarity score (encrypted)</p>
+                    </div>
+                </div>
+                
+                <h3>Key Features</h3>
+                <ul class="checklist">
+                    <li><span class="check-icon">✓</span> Documents compared without decryption</li>
+                    <li><span class="check-icon">✓</span> vetKeys integration for secure key management</li>
+                    <li><span class="check-icon">✓</span> No persistent key storage in canister</li>
+                    <li><span class="check-icon">✓</span> Cached key derivation for performance</li>
+                    <li><span class="check-icon">✓</span> Batch operations support</li>
+                    <li><span class="x-icon">✗</span> SimplePaillier (NOT secure - POC only)</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h2>System Requirements</h2>
+                <ul class="checklist">
+                    <li>
+                        <span id="check-dfx" class="x-icon">○</span>
+                        <code class="code-inline">dfx</code> version 0.15.0 or higher
+                    </li>
+                    <li>
+                        <span id="check-node" class="x-icon">○</span>
+                        Node.js for monitoring scripts
+                    </li>
+                    <li>
+                        <span id="check-rust" class="x-icon">○</span>
+                        Rust toolchain (for modifications only)
+                    </li>
+                </ul>
+                
+                <button class="button" onclick="checkRequirements()">
+                    Check Requirements
+                </button>
+            </div>
+        </div>
+        
+        <!-- Quick Start Tab -->
+        <div id="quickstart" class="tab-content">
+            <div class="card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    Quick Start Guide
+                </h2>
+                
+                <h3>Step 1: Navigate to Project</h3>
+                <div class="command-box">
+                    cd /Users/creed/projects/rust-wasm/paillier-icp-canister/paillier_poc
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>Step 2: Deploy the Canister</h3>
+                <div class="command-box">
+                    ./deploy.sh
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <p>Expected output:</p>
+                <div class="output-box">✓ Canister deployed successfully
+Canister ID: be2us-64aaa-aaaaa-qaabq-cai
+Health: Status: Not initialized, Documents: 0, Memory: 0KB</div>
+                
+                <h3>Step 3: Initialize with vetKeys</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend initialize_paillier
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <p>Expected output:</p>
+                <div class="output-box">(
+  record {
+    success = true;
+    message = "Paillier initialized with vetKeys";
+    key_generation_ms = 150;
+    instructions_used = 12_000_000;
+    memory_used_kb = 45;
+  },
+)</div>
+                
+                <h3>Step 4: Run Tests</h3>
+                <div class="command-box">
+                    ./test_vetkd_integration.sh
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Commands Tab -->
+        <div id="commands" class="tab-content">
+            <div class="card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="9" y1="9" x2="15" y2="9"/>
+                        <line x1="9" y1="15" x2="15" y2="15"/>
+                    </svg>
+                    Command Builder
+                </h2>
+                
+                <h3>Encrypt Document</h3>
+                <div class="form-group">
+                    <label>Document ID (alphanumeric, _, - only)</label>
+                    <input type="text" id="docId" placeholder="my_document_001" pattern="[a-zA-Z0-9_-]+" maxlength="64">
+                </div>
+                
+                <div class="form-group">
+                    <label>Number of Tokens</label>
+                    <select id="tokenCount">
+                        <option value="5">5 tokens (test)</option>
+                        <option value="10" selected>10 tokens (small)</option>
+                        <option value="20">20 tokens (medium)</option>
+                        <option value="30">30 tokens (large)</option>
+                        <option value="40">40 tokens (maximum)</option>
+                    </select>
+                </div>
+                
+                <button class="button" onclick="generateEncryptCommand()">
+                    Generate Encrypt Command
+                </button>
+                
+                <div id="encryptCommand" style="display:none;">
+                    <h4>Generated Command:</h4>
+                    <div class="command-box" id="encryptCommandText">
+                        <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 2rem;">Compare Documents</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Document A ID</label>
+                        <input type="text" id="docA" placeholder="document_1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Document B ID</label>
+                        <input type="text" id="docB" placeholder="document_2">
+                    </div>
+                </div>
+                
+                <button class="button" onclick="generateCompareCommand()">
+                    Generate Compare Command
+                </button>
+                
+                <div id="compareCommand" style="display:none;">
+                    <h4>Generated Command:</h4>
+                    <div class="command-box" id="compareCommandText">
+                        <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Common Commands Reference</h2>
+                
+                <h3>Check vetKeys Support</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend check_vetkd_support
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>List All Documents</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend list_documents
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>Get Statistics</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend get_stats
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>Get vetKeys Metrics</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend get_vetkd_metrics
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>Clear Cache (Owner Only)</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend clear_vetkd_cache
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Testing Tab -->
+        <div id="testing" class="tab-content">
+            <div class="card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Complete Test Workflow
+                </h2>
+                
+                <h3>1. Basic Functionality Test</h3>
+                <p>Test the core encryption and comparison features:</p>
+                
+                <div class="command-box">
+                    # Encrypt first document
+                    dfx canister call paillier_poc_backend encrypt_document '("test_doc_1", vec { blob "\00\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b\1c\1d\1e\1f" })'
+                    
+                    # Encrypt second document
+                    dfx canister call paillier_poc_backend encrypt_document '("test_doc_2", vec { blob "\20\21\22\23\24\25\26\27\28\29\2a\2b\2c\2d\2e\2f\30\31\32\33\34\35\36\37\38\39\3a\3b\3c\3d\3e\3f" })'
+                    
+                    # Compare documents
+                    dfx canister call paillier_poc_backend compare_documents '("test_doc_1", "test_doc_2")'
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>2. Cache Effectiveness Test</h3>
+                <p>Verify that key caching is working:</p>
+                
+                <div class="command-box">
+                    # First encryption (derives key)
+                    dfx canister call paillier_poc_backend encrypt_document '("cache_test", vec { blob "\00\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b\1c\1d\1e\1f" })'
+                    
+                    # Check metrics (should show 1 derivation)
+                    dfx canister call paillier_poc_backend get_vetkd_metrics
+                    
+                    # Re-encrypt same document (should use cache)
+                    dfx canister call paillier_poc_backend encrypt_document '("cache_test", vec { blob "\40\41\42\43\44\45\46\47\48\49\4a\4b\4c\4d\4e\4f\50\51\52\53\54\55\56\57\58\59\5a\5b\5c\5d\5e\5f" })'
+                    
+                    # Check metrics again (should show cache hit)
+                    dfx canister call paillier_poc_backend get_vetkd_metrics
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>3. Performance Test</h3>
+                <p>Run the comprehensive test suite:</p>
+                
+                <div class="command-box">
+                    ./test_vetkd_integration.sh
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Expected Results</h2>
+                
+                <div class="grid-2">
+                    <div class="metric-card">
+                        <div class="metric-value">&lt;200ms</div>
+                        <div class="metric-label">Key Derivation (first time)</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">&lt;1ms</div>
+                        <div class="metric-label">Key Derivation (cached)</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">~1-2M</div>
+                        <div class="metric-label">Instructions per Operation</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">&gt;80%</div>
+                        <div class="metric-label">Target Cache Hit Rate</div>
+                    </div>
+                </div>
+                
+                <h3>Common Issues</h3>
+                <ul>
+                    <li><strong>vetKeys not available:</strong> You're on a subnet without vetKeys support. The system will use fallback mode.</li>
+                    <li><strong>Instruction limit exceeded:</strong> Reduce the number of tokens or use batch operations.</li>
+                    <li><strong>Invalid document ID:</strong> Use only alphanumeric characters, underscores, and hyphens.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Monitoring Tab -->
+        <div id="monitoring" class="tab-content">
+            <div class="card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                    Real-time Monitoring
+                </h2>
+                
+                <h3>Start Performance Monitor</h3>
+                <p>Monitor canister performance in real-time:</p>
+                
+                <div class="command-box">
+                    node monitor_performance_vetkd.js
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <p>The monitor will show:</p>
+                <ul>
+                    <li>Real-time operation tracking</li>
+                    <li>Instruction usage per operation</li>
+                    <li>Memory consumption</li>
+                    <li>vetKeys cache hit rate</li>
+                    <li>Performance trends</li>
+                </ul>
+                
+                <h3>Monitor Output Example</h3>
+                <div class="output-box info-box">╔════════════════════════════════════════════════════════════╗
+║         Paillier POC Canister Performance Monitor          ║
+╚════════════════════════════════════════════════════════════╝
+
+Status: Ready, Documents: 3, Memory: 156KB
+
+═══ Operations ═══
+Total Operations:     47
+Encryption Ops:       25
+Comparison Ops:       15
+Failed Operations:    2
+
+═══ Resource Usage ═══
+Documents Stored:     5
+Memory Used:          0.15 MB
+Total Instructions:   2,345,678,901
+
+═══ vetKeys Performance ═══
+Key Derivations:      12
+Cache Hits:           35
+Cache Hit Rate:       74.5%
+Avg Derivation Time:  145.3ms
+
+═══ Recent Operations (Last 5) ═══
+14:23:45 | encrypt    | 523,456,789 instructions
+14:23:12 | compare    | 1,234,567 instructions (cached)
+14:22:58 | encrypt    | 545,678,901 instructions
+14:22:30 | derive_key | 145,678,901 instructions
+14:21:45 | compare    | 1,456,789 instructions (cached)</div>
+            </div>
+            
+            <div class="card">
+                <h2>Manual Checks</h2>
+                
+                <h3>Check Current Statistics</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend get_stats
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>Check vetKeys Metrics</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend get_vetkd_metrics
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+                
+                <h3>Health Check</h3>
+                <div class="command-box">
+                    dfx canister call paillier_poc_backend health_check
+                    <button class="copy-button" onclick="copyCommand(this)">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active from all tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Mark tab button as active
+            event.target.classList.add('active');
+        }
+        
+        // Copy command functionality
+        function copyCommand(button) {
+            const commandBox = button.parentElement;
+            const command = commandBox.textContent.replace('Copy', '').trim();
+            
+            navigator.clipboard.writeText(command).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        // Generate encrypt command
+        function generateEncryptCommand() {
+            const docId = document.getElementById('docId').value || 'test_doc';
+            const tokenCount = parseInt(document.getElementById('tokenCount').value);
+            
+            // Validate doc ID
+            if (!/^[a-zA-Z0-9_-]+$/.test(docId)) {
+                alert('Document ID can only contain letters, numbers, underscores, and hyphens');
+                return;
+            }
+            
+            // Generate token blob
+            let tokens = 'vec { ';
+            for (let i = 0; i < tokenCount; i++) {
+                tokens += 'blob "';
+                for (let j = 0; j < 32; j++) {
+                    tokens += '\\' + ((i * 32 + j) % 256).toString(16).padStart(2, '0');
+                }
+                tokens += '"';
+                if (i < tokenCount - 1) tokens += '; ';
+            }
+            tokens += ' }';
+            
+            const command = `dfx canister call paillier_poc_backend encrypt_document '("${docId}", ${tokens})'`;
+            
+            document.getElementById('encryptCommandText').textContent = command;
+            document.getElementById('encryptCommand').style.display = 'block';
+            
+            // Add copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-button';
+            copyBtn.textContent = 'Copy';
+            copyBtn.onclick = function() { copyCommand(this); };
+            document.getElementById('encryptCommandText').appendChild(copyBtn);
+        }
+        
+        // Generate compare command
+        function generateCompareCommand() {
+            const docA = document.getElementById('docA').value || 'doc_1';
+            const docB = document.getElementById('docB').value || 'doc_2';
+            
+            if (!/^[a-zA-Z0-9_-]+$/.test(docA) || !/^[a-zA-Z0-9_-]+$/.test(docB)) {
+                alert('Document IDs can only contain letters, numbers, underscores, and hyphens');
+                return;
+            }
+            
+            const command = `dfx canister call paillier_poc_backend compare_documents '("${docA}", "${docB}")'`;
+            
+            document.getElementById('compareCommandText').textContent = command;
+            document.getElementById('compareCommand').style.display = 'block';
+            
+            // Add copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-button';
+            copyBtn.textContent = 'Copy';
+            copyBtn.onclick = function() { copyCommand(this); };
+            document.getElementById('compareCommandText').appendChild(copyBtn);
+        }
+        
+        // Check system requirements
+        async function checkRequirements() {
+            // This would normally check actual system state
+            // For demo, we'll simulate the checks
+            
+            const checks = [
+                { id: 'check-dfx', delay: 500 },
+                { id: 'check-node', delay: 1000 },
+                { id: 'check-rust', delay: 1500 }
+            ];
+            
+            for (const check of checks) {
+                setTimeout(() => {
+                    document.getElementById(check.id).textContent = '✓';
+                    document.getElementById(check.id).className = 'check-icon';
+                }, check.delay);
+            }
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add example values
+            document.getElementById('docId').placeholder = `example_doc_${Date.now()}`;
+        });
+    </script>
+</body>
+</html>
