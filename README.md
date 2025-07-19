@@ -17,7 +17,7 @@ This project enables encrypted document comparison without revealing document co
 
 ## ⚠️ Important Notice
 
-**This is a PROOF OF CONCEPT** using a simplified Paillier implementation that is NOT cryptographically secure. Do not use for production or sensitive data.
+**This is a Prototype** using a simplified Paillier implementation that is NOT cryptographically secure. Do not use for production or sensitive data.
 
 ## 🚀 Quick Start
 
