@@ -1,8 +1,8 @@
 {
   "canisters": {
-    "paillier_poc_backend": {
-      "candid": "src/paillier_poc_backend/paillier_poc_backend.did",
-      "package": "paillier_poc_backend",
+    "paillier_canister": {
+      "candid": "src/paillier-canister/paillier-canister.did",
+      "package": "paillier-canister",
       "type": "rust",
       "opt_level": "3",
       "build_assets": false,
@@ -10,6 +10,11 @@
         "name": "opt",
         "args": "-O3 --strip-debug --strip-producers"
       }
+    },
+    "frontend": {
+      "type": "assets",
+      "source": ["web/build"],
+      "build": ["npm run build"]
     }
   },
   "defaults": {

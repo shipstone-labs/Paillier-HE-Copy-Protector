@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "src/paillier-core",
+    "src/paillier-canister",
+]
+resolver = "2"
+
+[workspace.dependencies]
+candid = "0.10"
+ic-cdk = "0.15"
+ic-cdk-macros = "0.15"
+num-bigint = { version = "0.4", features = ["rand"] }
+num-traits = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+sha2 = "0.10"

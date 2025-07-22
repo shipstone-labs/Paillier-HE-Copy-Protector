@@ -1,0 +1,33 @@
+{
+  "name": "web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^6.0.0",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tsconfig/svelte": "^5.0.4",
+    "@types/node": "^24.0.15",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "svelte": "^5.35.5",
+    "svelte-check": "^4.2.2",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  },
+  "dependencies": {
+    "@dfinity/agent": "^3.0.0",
+    "@dfinity/auth-client": "^3.0.0",
+    "@dfinity/candid": "^3.0.0",
+    "@dfinity/principal": "^3.0.0",
+    "js-tiktoken": "^1.0.20",
+    "marked": "^16.1.1"
+  }
+}
