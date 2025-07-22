@@ -7,12 +7,24 @@ const EncryptedDocument = IDL.Record({
   tokens: IDL.Vec(IDL.Vec(IDL.Nat8)),
   timestamp: IDL.Nat64,
   owner: IDL.Principal,
+  title: IDL.Opt(IDL.Text),
+  public_key_n: IDL.Text,
+  public_key_g: IDL.Text,
 });
 
 const StoreResult = IDL.Record({
   document_id: IDL.Text,
   success: IDL.Bool,
   message: IDL.Text,
+});
+
+const DocumentMetadata = IDL.Record({
+  document_id: IDL.Text,
+  title: IDL.Text,
+  owner: IDL.Principal,
+  timestamp: IDL.Nat64,
+  public_key_n: IDL.Text,
+  public_key_g: IDL.Text,
 });
 
 const CompareResult = IDL.Record({
@@ -52,7 +64,7 @@ const ConfigUpdate = IDL.Record({
 const idlFactory = ({ IDL }: { IDL: any }) => {
   return IDL.Service({
     // Update methods
-    store_document: IDL.Func([IDL.Vec(IDL.Vec(IDL.Nat8))], [StoreResult], []),
+    store_document: IDL.Func([IDL.Text, IDL.Vec(IDL.Vec(IDL.Nat8)), IDL.Text, IDL.Text], [StoreResult], []),
     compare_documents: IDL.Func([IDL.Text, IDL.Text], [CompareResult], []),
     compare_with_document: IDL.Func(
       [IDL.Text, IDL.Vec(IDL.Vec(IDL.Nat8)), IDL.Opt(ComparisonMode)],
@@ -67,6 +79,7 @@ const idlFactory = ({ IDL }: { IDL: any }) => {
     
     // Query methods
     list_my_documents: IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
+    list_all_documents: IDL.Func([], [IDL.Vec(DocumentMetadata)], ['query']),
     get_stats: IDL.Func([], [Stats], ['query']),
   });
 };
@@ -76,6 +89,15 @@ export interface StoreResult {
   document_id: string;
   success: boolean;
   message: string;
+}
+
+export interface DocumentMetadata {
+  document_id: string;
+  title: string;
+  owner: string;
+  timestamp: bigint;
+  public_key_n: string;
+  public_key_g: string;
 }
 
 export interface CompareResult {
@@ -108,18 +130,25 @@ export class CanisterService {
   }
   
   async init(agent: HttpAgent): Promise<void> {
+    console.log('CanisterService: Initializing with canisterId:', this.canisterId);
     this.actor = Actor.createActor(idlFactory, {
       agent,
       canisterId: this.canisterId,
     });
+    console.log('CanisterService: Actor created:', this.actor);
   }
   
-  async storeDocument(encryptedTokens: Uint8Array[]): Promise<StoreResult> {
+  async storeDocument(
+    title: string, 
+    encryptedTokens: Uint8Array[], 
+    publicKeyN: string, 
+    publicKeyG: string
+  ): Promise<StoreResult> {
     if (!this.actor) {
       throw new Error('Canister not initialized');
     }
     
-    return await this.actor.store_document(encryptedTokens);
+    return await this.actor.store_document(title, encryptedTokens, publicKeyN, publicKeyG);
   }
   
   async compareDocuments(docId1: string, docId2: string): Promise<CompareResult> {
@@ -148,6 +177,17 @@ export class CanisterService {
     }
     
     return await this.actor.list_my_documents();
+  }
+  
+  async listAllDocuments(): Promise<DocumentMetadata[]> {
+    if (!this.actor) {
+      throw new Error('Canister not initialized');
+    }
+    
+    console.log('CanisterService: Calling list_all_documents...');
+    const result = await this.actor.list_all_documents();
+    console.log('CanisterService: list_all_documents result:', result);
+    return result;
   }
   
   async getStats(): Promise<Stats> {

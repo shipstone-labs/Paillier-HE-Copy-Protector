@@ -79,6 +79,10 @@ export class EncryptionService {
         tokenCount: tokens.length,
         originalLength: 0, // Set by caller if needed
         timestamp: Date.now(),
+        publicKey: {
+          n: publicKey.n.toString(),
+          g: publicKey.g.toString()
+        }
       },
     };
   }

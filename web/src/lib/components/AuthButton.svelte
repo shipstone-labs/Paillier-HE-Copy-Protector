@@ -19,6 +19,7 @@
     isAuthenticated = await authService.isAuthenticated();
     if (isAuthenticated) {
       principal = await authService.getPrincipal();
+      console.log('AuthButton: Dispatching authenticated event');
       dispatch('authenticated', { principal });
     }
   }
@@ -54,6 +55,10 @@
   export function getAuthService(): AuthService {
     return authService;
   }
+  
+  export function getAgent() {
+    return authService?.getAgent() || null;
+  }
 </script>
 
 <div class="auth-container">
@@ -64,7 +69,7 @@
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
           <circle cx="12" cy="7" r="4"></circle>
         </svg>
-        {principal ? principal.slice(0, 8) + '...' + principal.slice(-3) : 'Connected'}
+        {principal && typeof principal === 'string' ? principal.slice(0, 8) + '...' + principal.slice(-3) : 'Connected'}
       </span>
       <button 
         class="btn-logout"

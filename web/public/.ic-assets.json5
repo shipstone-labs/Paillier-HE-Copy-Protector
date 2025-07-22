@@ -2,6 +2,20 @@
 // This file defines security policies for static assets served by the frontend canister
 [
   {
+    // Allow index.html to be embedded in iframes (if needed for IC integrations)
+    "match": "index.html",
+    "headers": {
+      "X-Frame-Options": "SAMEORIGIN"
+    }
+  },
+  {
+    // Cache static assets for better performance
+    "match": "{assets/**/*,**/*.js,**/*.css}",
+    "headers": {
+      "Cache-Control": "public, max-age=31536000, immutable"
+    }
+  },
+  {
     // Apply standard security headers to all files
     "match": "**/*",
     "security_policy": "standard",
@@ -16,18 +30,5 @@
       "Permissions-Policy": "geolocation=(), microphone=(), camera=()"
     }
   },
-  {
-    // Allow index.html to be embedded in iframes (if needed for IC integrations)
-    "match": "index.html",
-    "headers": {
-      "X-Frame-Options": "SAMEORIGIN"
-    }
-  },
-  {
-    // Cache static assets for better performance
-    "match": "{assets/**/*,**/*.js,**/*.css}",
-    "headers": {
-      "Cache-Control": "public, max-age=31536000, immutable"
-    }
-  }
+
 ]

@@ -4,7 +4,8 @@
   import TokenPreview from './lib/components/TokenPreview.svelte';
   import KeyManager from './lib/components/KeyManager.svelte';
   import AuthButton from './lib/components/AuthButton.svelte';
-  import DocumentSubmit from './lib/components/DocumentSubmit.svelte';
+  import DocumentSelector from './lib/components/DocumentSelector.svelte';
+  import DocumentAction from './lib/components/DocumentAction.svelte';
   import type { TokenizedDocument, EncryptedDocument } from './lib/types';
   import type { MarkdownTokenizer } from './lib/tokenizer';
   import type { EncryptionService } from './lib/crypto/encryptionService';
@@ -23,9 +24,13 @@
   let agent: HttpAgent | null = null;
   let submittedDocId: string | null = null;
   let comparisonResult: any = null;
+  let isReencrypting = false;
+  let selectedDocumentOption = 'new'; // Track selected option from DocumentAction
+  let documentTitle = '';
   
   // Configure canister ID - dfx provides this during build
   const CANISTER_ID = import.meta.env.VITE_CANISTER_ID_PAILLIER_CANISTER || 'ryjl3-tyaaa-aaaaa-aaaba-cai';
+  console.log('App: Using canister ID:', CANISTER_ID);
   
   // Load stored keys on mount
   onMount(async () => {
@@ -198,9 +203,20 @@
     return bytes;
   }
   
-  function handleAuthenticated(event: CustomEvent) {
+  async function handleAuthenticated(event: CustomEvent) {
     isAuthenticated = true;
-    agent = authButton.getAuthService().getAgent();
+    // Give the auth service a moment to complete setup
+    await new Promise(resolve => setTimeout(resolve, 100));
+    agent = authButton.getAgent();
+    console.log('App: Authenticated, agent from AuthButton:', agent);
+    
+    // If still null, try getting from service
+    if (!agent) {
+      const authService = authButton.getAuthService();
+      console.log('App: AuthService:', authService);
+      agent = authService?.getAgent();
+      console.log('App: Agent from service:', agent);
+    }
   }
   
   function handleLogout() {
@@ -210,14 +226,81 @@
     comparisonResult = null;
   }
   
-  function handleSubmitted(event: CustomEvent<{ documentId: string }>) {
+  async function handleSubmitted(event: CustomEvent<{ documentId: string; title: string }>) {
     submittedDocId = event.detail.documentId;
     error = null;
+    documentTitle = ''; // Clear the title after submission
   }
   
-  function handleCompared(event: CustomEvent) {
-    comparisonResult = event.detail;
+  async function handleReencrypt(event: CustomEvent<{ publicKey: any; targetDocumentId: string; targetDocumentTitle: string }>) {
+    if (!tokenizedDocument || !encryptionService) {
+      error = 'Cannot re-encrypt: missing document or encryption service';
+      return;
+    }
+    
+    const { publicKey, targetDocumentId, targetDocumentTitle } = event.detail;
+    isReencrypting = true;
     error = null;
+    
+    try {
+      // Update status
+      if (uploadComponent) {
+        uploadComponent.updateStatus({
+          stage: 'encrypting',
+          progress: 60,
+          message: `Re-encrypting for comparison with "${targetDocumentTitle}"...`
+        });
+      }
+      
+      // Re-encrypt with the target document's public key
+      const reencryptedTokens = await encryptionService.encryptTokens(
+        tokenizedDocument.tokens,
+        publicKey
+      );
+      
+      // Convert to the format expected by the canister
+      const tokenArrays = reencryptedTokens.map(token => {
+        const binary = atob(token.value);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+      });
+      
+      // Compare with the target document
+      const { CanisterService } = await import('./lib/api/canister');
+      const canisterService = new CanisterService(CANISTER_ID);
+      await canisterService.init(agent!);
+      
+      const mode = { Both: null };
+      const result = await canisterService.compareWithDocument(targetDocumentId, tokenArrays, mode);
+      
+      if (result.success) {
+        comparisonResult = {
+          result,
+          documentId: targetDocumentId,
+          documentTitle: targetDocumentTitle,
+          mode: 'Both'
+        };
+      } else {
+        error = result.message;
+      }
+      
+      // Update status
+      if (uploadComponent) {
+        uploadComponent.updateStatus({
+          stage: 'complete',
+          progress: 100,
+          message: 'Comparison complete!'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to re-encrypt and compare:', err);
+      error = err instanceof Error ? err.message : 'Failed to compare documents';
+    } finally {
+      isReencrypting = false;
+    }
   }
   
   function handleError(event: CustomEvent<{ message: string }>) {
@@ -256,13 +339,39 @@
     </header>
     
     <div class="max-w-4xl mx-auto">
-      <KeyManager
-        keys={storedKeys}
-        bind:selectedKeyId
-        on:keySelected={({ detail }) => selectedKeyId = detail.keyId}
-        on:importKey={handleImportKey}
-        on:deleteKey={handleDeleteKey}
-      />
+      {#if isAuthenticated}
+        <DocumentSelector
+          {agent}
+          canisterId={CANISTER_ID}
+          bind:selectedOption={selectedDocumentOption}
+          disabled={isReencrypting}
+        />
+      {/if}
+      
+      {#if selectedDocumentOption === 'new'}
+        <KeyManager
+          keys={storedKeys}
+          bind:selectedKeyId
+          on:keySelected={({ detail }) => selectedKeyId = detail.keyId}
+          on:importKey={handleImportKey}
+          on:deleteKey={handleDeleteKey}
+        />
+      {/if}
+      
+      {#if isAuthenticated && selectedDocumentOption === 'new'}
+        <div class="mb-6">
+          <label for="doc-title" class="block text-sm font-medium text-gray-700 mb-1">
+            Document Title
+          </label>
+          <input
+            id="doc-title"
+            type="text"
+            bind:value={documentTitle}
+            placeholder="Enter a descriptive title for your document"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      {/if}
       
       <MarkdownUpload
         bind:this={uploadComponent}
@@ -289,23 +398,35 @@
             Encrypted {encryptedDocument.metadata.tokenCount} tokens successfully.
           </p>
         </div>
-        
-        {#if isAuthenticated}
-          <DocumentSubmit
+      {/if}
+      
+      {#if isAuthenticated}
+        {#if isReencrypting}
+          <div class="mt-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center gap-3">
+              <div class="spinner"></div>
+              <p class="text-blue-700">Re-encrypting document for comparison...</p>
+            </div>
+          </div>
+        {:else}
+          <DocumentAction
             {encryptedDocument}
+            {tokenizedDocument}
             {agent}
             canisterId={CANISTER_ID}
+            bind:selectedOption={selectedDocumentOption}
+            bind:documentTitle
             on:submitted={handleSubmitted}
-            on:compared={handleCompared}
+            on:reencrypt={handleReencrypt}
             on:error={handleError}
           />
-        {:else}
-          <div class="mt-6 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p class="text-yellow-800">
-              Please login with Internet Identity to submit documents to the canister.
-            </p>
-          </div>
         {/if}
+      {:else if encryptedDocument}
+        <div class="mt-6 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-yellow-800">
+            Please login with Internet Identity to submit documents to the canister.
+          </p>
+        </div>
       {/if}
       
       {#if submittedDocId}
@@ -326,23 +447,27 @@
           <h3 class="text-lg font-semibold text-purple-800 mb-2">Comparison Results</h3>
           <div class="space-y-2 text-purple-700">
             <p>
-              Document compared: <code class="bg-purple-100 px-2 py-1 rounded">{comparisonResult.documentId}</code>
+              Compared with: <span class="font-medium">{comparisonResult.documentTitle}</span>
+              <code class="bg-purple-100 px-2 py-1 rounded ml-2 text-sm">{comparisonResult.documentId}</code>
             </p>
             <p>
               Mode: <span class="font-medium">{comparisonResult.mode}</span>
             </p>
             {#if comparisonResult.result.similarity_score.length > 0}
               <p>
-                Similarity: <span class="font-bold">{(comparisonResult.result.similarity_score[0] * 100).toFixed(2)}%</span>
+                Similarity: <span class="font-bold">{comparisonResult.result.similarity_score[0].toFixed(2)}%</span>
               </p>
             {/if}
             {#if comparisonResult.result.plagiarism_score.length > 0}
               <p>
-                Plagiarism Score: <span class="font-bold">{(comparisonResult.result.plagiarism_score[0] * 100).toFixed(2)}%</span>
+                Plagiarism Score: <span class="font-bold">{comparisonResult.result.plagiarism_score[0].toFixed(2)}%</span>
               </p>
             {/if}
             <p>
               Tokens compared: {comparisonResult.result.tokens_compared}
+            </p>
+            <p class="text-sm mt-3 text-purple-600">
+              {comparisonResult.result.message}
             </p>
           </div>
         </div>
@@ -356,5 +481,11 @@
 </main>
 
 <style>
-  /* Global styles are in app.css with Tailwind */
+  .spinner {
+    @apply w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>

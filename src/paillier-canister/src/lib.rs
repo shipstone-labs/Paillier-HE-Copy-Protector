@@ -17,6 +17,9 @@ pub struct EncryptedDocument {
     pub tokens: Vec<Vec<u8>>, // Encrypted token values
     pub timestamp: u64,
     pub owner: Principal,
+    pub title: Option<String>, // Optional for backward compatibility
+    pub public_key_n: String, // Paillier public key n component
+    pub public_key_g: String, // Paillier public key g component
 }
 
 impl Storable for EncryptedDocument {
@@ -36,6 +39,16 @@ pub struct StoreResult {
     pub document_id: String, // Hash of encrypted data
     pub success: bool,
     pub message: String,
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct DocumentMetadata {
+    pub document_id: String,
+    pub title: String,
+    pub owner: Principal,
+    pub timestamp: u64,
+    pub public_key_n: String,
+    pub public_key_g: String,
 }
 
 #[derive(CandidType, Deserialize)]
@@ -125,7 +138,12 @@ fn post_upgrade() {
 
 /// Store an encrypted document
 #[update]
-fn store_document(encrypted_tokens: Vec<Vec<u8>>) -> StoreResult {
+fn store_document(
+    title: String, 
+    encrypted_tokens: Vec<Vec<u8>>,
+    public_key_n: String,
+    public_key_g: String
+) -> StoreResult {
     let caller = ic_cdk::caller();
     
     // Validate input
@@ -174,6 +192,9 @@ fn store_document(encrypted_tokens: Vec<Vec<u8>>) -> StoreResult {
         tokens: encrypted_tokens,
         timestamp: ic_cdk::api::time(),
         owner: caller,
+        title: Some(title),
+        public_key_n,
+        public_key_g,
     };
     
     DOCUMENTS.with(|docs| {
@@ -516,6 +537,24 @@ fn list_my_documents() -> Vec<String> {
             .iter()
             .filter(|(_, doc)| doc.owner == caller)
             .map(|(id, _)| id)
+            .collect()
+    })
+}
+
+/// Get all documents with metadata (for comparison view)
+#[query]
+fn list_all_documents() -> Vec<DocumentMetadata> {
+    DOCUMENTS.with(|docs| {
+        docs.borrow()
+            .iter()
+            .map(|(id, doc)| DocumentMetadata {
+                document_id: id,
+                title: doc.title.clone().unwrap_or_else(|| "Untitled Document".to_string()),
+                owner: doc.owner,
+                timestamp: doc.timestamp,
+                public_key_n: doc.public_key_n.clone(),
+                public_key_g: doc.public_key_g.clone(),
+            })
             .collect()
     })
 }

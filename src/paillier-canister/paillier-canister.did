@@ -2,12 +2,24 @@ type EncryptedDocument = record {
   tokens : vec blob;
   timestamp : nat64;
   owner : principal;
+  title : opt text;
+  public_key_n : text;
+  public_key_g : text;
 };
 
 type StoreResult = record {
   document_id : text;
   success : bool;
   message : text;
+};
+
+type DocumentMetadata = record {
+  document_id : text;
+  title : text;
+  owner : principal;
+  timestamp : nat64;
+  public_key_n : text;
+  public_key_g : text;
 };
 
 type CompareResult = record {
@@ -46,12 +58,13 @@ type ConfigUpdate = record {
 
 service : {
   // Update methods
-  "store_document" : (vec blob) -> (StoreResult);
+  "store_document" : (text, vec blob, text, text) -> (StoreResult);
   "compare_documents" : (text, text) -> (CompareResult);
   "compare_with_document" : (text, vec blob, opt ComparisonMode) -> (CompareResult);
   "update_config" : (ConfigUpdate) -> (variant { Ok : text; Err : text });
   
   // Query methods
   "list_my_documents" : () -> (vec text) query;
+  "list_all_documents" : () -> (vec DocumentMetadata) query;
   "get_stats" : () -> (Stats) query;
 }

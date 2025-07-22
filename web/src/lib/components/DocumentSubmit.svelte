@@ -7,11 +7,14 @@
   export let encryptedDocument: EncryptedDocument | null = null;
   export let agent: HttpAgent | null = null;
   export let canisterId: string = '';
+  export let selectedDocument: any = null;
   
   const dispatch = createEventDispatcher();
   
   let isSubmitting = false;
   let showCompareDialog = false;
+  let showSubmitDialog = false;
+  let documentTitle = '';
   let compareDocId = '';
   let comparisonMode: 'Duplicate' | 'Plagiarism' | 'Both' = 'Both';
   let canisterService: CanisterService | null = null;
@@ -28,7 +31,7 @@
   }
   
   async function submitDocument() {
-    if (!encryptedDocument || !canisterService) return;
+    if (!encryptedDocument || !canisterService || !documentTitle.trim()) return;
     
     isSubmitting = true;
     
@@ -44,10 +47,21 @@
         return bytes;
       });
       
-      const result = await canisterService.storeDocument(tokenArrays);
+      // Get the public key from the encrypted document metadata
+      const publicKeyN = encryptedDocument.metadata.publicKey.n;
+      const publicKeyG = encryptedDocument.metadata.publicKey.g;
+      
+      const result = await canisterService.storeDocument(
+        documentTitle.trim(), 
+        tokenArrays,
+        publicKeyN,
+        publicKeyG
+      );
       
       if (result.success) {
-        dispatch('submitted', { documentId: result.document_id });
+        dispatch('submitted', { documentId: result.document_id, title: documentTitle });
+        showSubmitDialog = false;
+        documentTitle = '';
       } else {
         dispatch('error', { message: result.message });
       }
@@ -110,22 +124,17 @@
     <div class="actions">
       <button
         class="btn-primary"
-        on:click={submitDocument}
+        on:click={() => showSubmitDialog = true}
         disabled={isSubmitting || !canisterService}
       >
-        {#if isSubmitting}
-          <span class="spinner"></span>
-          Submitting...
-        {:else}
-          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          Store Document
-        {/if}
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        Store Document
       </button>
       
       <button
@@ -199,6 +208,58 @@
             disabled={!compareDocId || isSubmitting}
           >
             Compare
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+  
+  {#if showSubmitDialog}
+    <div 
+      class="dialog-overlay"
+      role="button"
+      tabindex="0"
+      on:click={() => showSubmitDialog = false}
+      on:keydown={(e) => e.key === 'Escape' && (showSubmitDialog = false)}
+      aria-label="Close dialog overlay"
+    >
+      <div 
+        class="dialog"
+        role="dialog"
+        aria-labelledby="submit-dialog-title"
+        tabindex="-1"
+        on:click|stopPropagation
+        on:keydown|stopPropagation
+      >
+        <h4 id="submit-dialog-title" class="dialog-title">Store Document</h4>
+        
+        <div class="form-group">
+          <label for="doc-title">Document Title</label>
+          <input
+            id="doc-title"
+            type="text"
+            bind:value={documentTitle}
+            placeholder="Enter a descriptive title for this document"
+            class="input"
+            autofocus
+          />
+        </div>
+        
+        <div class="dialog-actions">
+          <button class="btn-secondary" on:click={() => showSubmitDialog = false}>
+            Cancel
+          </button>
+          <button 
+            class="btn-primary" 
+            on:click={submitDocument}
+            disabled={!documentTitle.trim() || isSubmitting}
+          >
+            {#if isSubmitting}
+              <span class="spinner"></span>
+              Storing...
+            {:else}
+              Store
+            {/if}
           </button>
         </div>
       </div>

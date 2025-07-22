@@ -17,6 +17,10 @@ export interface EncryptedDocument {
     tokenCount: number;
     originalLength: number;
     timestamp: number;
+    publicKey: {
+      n: string;
+      g: string;
+    };
   };
 }
 
