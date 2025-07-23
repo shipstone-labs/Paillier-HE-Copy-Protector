@@ -339,68 +339,92 @@
     </header>
     
     <div class="max-w-4xl mx-auto">
-      {#if isAuthenticated}
+      {#if !isAuthenticated}
+        <div class="text-center py-16">
+          <div class="max-w-2xl mx-auto">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">
+              Secure Document Comparison with Homomorphic Encryption
+            </h2>
+            <p class="text-lg text-gray-600 mb-8">
+              Upload and encrypt your documents using Paillier homomorphic encryption. 
+              Compare documents for similarity without ever decrypting them, ensuring 
+              complete privacy and security on the Internet Computer blockchain.
+            </p>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+              <h3 class="text-lg font-semibold text-blue-900 mb-3">How it works:</h3>
+              <ol class="text-left text-blue-800 space-y-2 list-decimal list-inside">
+                <li>Login with Internet Identity to get started</li>
+                <li>Choose or generate an encryption key</li>
+                <li>Upload a markdown document to tokenize and encrypt</li>
+                <li>Store encrypted documents on-chain</li>
+                <li>Compare documents without decryption</li>
+              </ol>
+            </div>
+            <p class="text-gray-600">
+              Please login with Internet Identity to start protecting your documents.
+            </p>
+          </div>
+        </div>
+      {:else}
         <DocumentSelector
           {agent}
           canisterId={CANISTER_ID}
           bind:selectedOption={selectedDocumentOption}
           disabled={isReencrypting}
         />
-      {/if}
-      
-      {#if selectedDocumentOption === 'new'}
-        <KeyManager
-          keys={storedKeys}
-          bind:selectedKeyId
-          on:keySelected={({ detail }) => selectedKeyId = detail.keyId}
-          on:importKey={handleImportKey}
-          on:deleteKey={handleDeleteKey}
-        />
-      {/if}
-      
-      {#if isAuthenticated && selectedDocumentOption === 'new'}
-        <div class="mb-6">
-          <label for="doc-title" class="block text-sm font-medium text-gray-700 mb-1">
-            Document Title
-          </label>
-          <input
-            id="doc-title"
-            type="text"
-            bind:value={documentTitle}
-            placeholder="Enter a descriptive title for your document"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        
+        {#if selectedDocumentOption === 'new'}
+          <KeyManager
+            keys={storedKeys}
+            bind:selectedKeyId
+            on:keySelected={({ detail }) => selectedKeyId = detail.keyId}
+            on:importKey={handleImportKey}
+            on:deleteKey={handleDeleteKey}
           />
-        </div>
-      {/if}
-      
-      <MarkdownUpload
-        bind:this={uploadComponent}
-        on:fileLoaded={handleFileLoaded}
-      />
-      
-      {#if error}
-        <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p class="text-red-700">Error: {error}</p>
-        </div>
-      {/if}
-      
-      {#if tokenizedDocument}
-        <TokenPreview document={tokenizedDocument} />
-      {/if}
-      
-      {#if encryptedDocument}
-        <div class="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg">
-          <h3 class="text-lg font-semibold text-green-800 mb-2">Encryption Complete</h3>
-          <p class="text-green-700">
-            Document ID: <code class="bg-green-100 px-2 py-1 rounded">{encryptedDocument.id}</code>
-          </p>
-          <p class="text-green-700 mt-2">
-            Encrypted {encryptedDocument.metadata.tokenCount} tokens successfully.
-          </p>
-        </div>
-      {/if}
-      
-      {#if isAuthenticated}
+        {/if}
+        
+        {#if selectedDocumentOption === 'new'}
+          <div class="mb-6">
+            <label for="doc-title" class="block text-sm font-medium text-gray-700 mb-1">
+              Document Title
+            </label>
+            <input
+              id="doc-title"
+              type="text"
+              bind:value={documentTitle}
+              placeholder="Enter a descriptive title for your document"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        {/if}
+        
+        <MarkdownUpload
+          bind:this={uploadComponent}
+          on:fileLoaded={handleFileLoaded}
+        />
+        
+        {#if error}
+          <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-red-700">Error: {error}</p>
+          </div>
+        {/if}
+        
+        {#if tokenizedDocument}
+          <TokenPreview document={tokenizedDocument} />
+        {/if}
+        
+        {#if encryptedDocument}
+          <div class="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg">
+            <h3 class="text-lg font-semibold text-green-800 mb-2">Encryption Complete</h3>
+            <p class="text-green-700">
+              Document ID: <code class="bg-green-100 px-2 py-1 rounded">{encryptedDocument.id}</code>
+            </p>
+            <p class="text-green-700 mt-2">
+              Encrypted {encryptedDocument.metadata.tokenCount} tokens successfully.
+            </p>
+          </div>
+        {/if}
+        
         {#if isReencrypting}
           <div class="mt-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <div class="flex items-center gap-3">
@@ -421,12 +445,6 @@
             on:error={handleError}
           />
         {/if}
-      {:else if encryptedDocument}
-        <div class="mt-6 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p class="text-yellow-800">
-            Please login with Internet Identity to submit documents to the canister.
-          </p>
-        </div>
       {/if}
       
       {#if submittedDocId}
