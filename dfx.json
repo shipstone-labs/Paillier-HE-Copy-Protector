@@ -1,29 +1,34 @@
 {
-  "canisters": {
-    "paillier_poc_backend": {
-      "candid": "src/paillier_poc_backend/paillier_poc_backend.did",
-      "package": "paillier_poc_backend",
-      "type": "rust",
-      "opt_level": "3",
-      "build_assets": false,
-      "wasm_optimize": {
-        "name": "opt",
-        "args": "-O3 --strip-debug --strip-producers"
-      }
-    }
-  },
-  "defaults": {
-    "build": {
-      "args": "",
-      "packtool": ""
-    }
-  },
-  "networks": {
-    "local": {
-      "bind": "127.0.0.1:4943",
-      "type": "ephemeral"
-    }
-  },
-  "output_env_file": ".env",
-  "version": 1
+	"canisters": {
+		"paillier_canister": {
+			"candid": "src/paillier-canister/paillier-canister.did",
+			"package": "paillier-canister",
+			"type": "rust",
+			"opt_level": "3",
+			"build_assets": false,
+			"wasm_optimize": {
+				"name": "opt",
+				"args": "-O3 --strip-debug --strip-producers"
+			}
+		},
+		"frontend": {
+			"type": "assets",
+			"source": ["web/build"],
+			"build": ["npm run build"]
+		}
+	},
+	"defaults": {
+		"build": {
+			"args": "",
+			"packtool": ""
+		}
+	},
+	"networks": {
+		"local": {
+			"bind": "127.0.0.1:4943",
+			"type": "ephemeral"
+		}
+	},
+	"output_env_file": ".env",
+	"version": 1
 }

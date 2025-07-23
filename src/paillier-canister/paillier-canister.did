@@ -1,0 +1,70 @@
+type EncryptedDocument = record {
+  tokens : vec blob;
+  timestamp : nat64;
+  owner : principal;
+  title : opt text;
+  public_key_n : text;
+  public_key_g : text;
+};
+
+type StoreResult = record {
+  document_id : text;
+  success : bool;
+  message : text;
+};
+
+type DocumentMetadata = record {
+  document_id : text;
+  title : text;
+  owner : principal;
+  timestamp : nat64;
+  public_key_n : text;
+  public_key_g : text;
+};
+
+type CompareResult = record {
+  similarity_score : opt float64;
+  tokens_compared : nat32;
+  success : bool;
+  message : text;
+  plagiarism_score : opt float64;
+};
+
+type ComparisonMode = variant {
+  Duplicate;
+  Plagiarism;
+  Both;
+};
+
+type Stats = record {
+  total_documents : nat64;
+  memory_used_bytes : nat64;
+  max_documents : nat32;
+  max_tokens_per_document : nat32;
+  duplicate_threshold : float64;
+  check_all_duplicates : bool;
+  fingerprint_size : nat32;
+  fingerprint_threshold : float64;
+};
+
+type ConfigUpdate = record {
+  max_documents : opt nat32;
+  max_tokens_per_document : opt nat32;
+  duplicate_threshold : opt float64;
+  check_all_duplicates : opt bool;
+  fingerprint_size : opt nat32;
+  fingerprint_threshold : opt float64;
+};
+
+service : {
+  // Update methods
+  "store_document" : (text, vec blob, text, text) -> (StoreResult);
+  "compare_documents" : (text, text) -> (CompareResult);
+  "compare_with_document" : (text, vec blob, opt ComparisonMode) -> (CompareResult);
+  "update_config" : (ConfigUpdate) -> (variant { Ok : text; Err : text });
+  
+  // Query methods
+  "list_my_documents" : () -> (vec text) query;
+  "list_all_documents" : () -> (vec DocumentMetadata) query;
+  "get_stats" : () -> (Stats) query;
+}

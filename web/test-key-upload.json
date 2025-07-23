@@ -1,0 +1,8 @@
+{
+  "name": "Test Upload Key",
+  "publicKey": {
+    "n": "8b1a9953c2f3c3d3e3f3c3d3e3f3c3d3e3f3c3d3e3f3c3d3e3f3c3d3e3f3c3d3",
+    "g": "8b1a9953c2f3c3d3e3f3c3d3e3f3c3d3e3f3c3d3e3f3c3d3e3f3c3d3e3f3c3d4"
+  },
+  "note": "Test key for upload functionality"
+}
